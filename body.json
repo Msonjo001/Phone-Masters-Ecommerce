@@ -1,0 +1,8 @@
+{
+  "name": "John",
+  "phone": "+254712345678",
+  "product": "iPhone 15",
+  "amount_paid": "100000",
+  "location": "Nairobi",
+  "status": "Pending"
+}

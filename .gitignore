@@ -1,0 +1,12 @@
+# Dependency directories
+/node_modules
+/dist
+/build
+
+# Environment variables (CRITICAL SECURITY)
+.env
+.env.local
+
+# Supabase specific files
+/supabase/.secrets
+/supabase/functions/*/node_modules
