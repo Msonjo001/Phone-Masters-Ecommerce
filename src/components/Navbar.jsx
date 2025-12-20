@@ -18,13 +18,13 @@ export default function Navbar() {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         
        {/* LOGO + BRAND */}
-            <Link to="/" className="flex items-center gap-2 max-w-[60%]">
-             <img src={logo} alt="Logo" className="w-7 h-7 md:w-8 md:h-8 object-contain" />
-            <span className="text-base md:text-xl font-bold leading-tight truncate">
-             PhoneMasters <span className="text-pmorange">Ke</span>
-            </span>
-            </Link>
-            
+<Link to="/" className="flex items-center gap-2 max-w-[65%]">
+  <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
+  <span className="text-base md:text-xl font-bold leading-tight truncate">
+    PhoneMasters <span className="text-pmorange">Ke</span>
+  </span>
+</Link>
+
         {/* PC NAV LINKS (Hidden on Mobile) */}
         <div className="hidden md:flex items-center gap-6 font-medium text-gray-700">
           <Link to="/" className="hover:text-pmorange">Home</Link>

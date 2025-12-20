@@ -16,29 +16,29 @@ export default function ProductCard({ id, title, price, image, description }) { 
   }
 
   // REPLACE your ProductCard.jsx return with this:
-rreturn (
-  <div className="border rounded-lg shadow-sm hover:shadow-md transition overflow-hidden flex flex-col bg-white">
-    <div className="aspect-square w-full bg-gray-50">
+return (
+  <div className="border rounded-xl shadow-sm hover:shadow-md transition overflow-hidden flex flex-col bg-white h-full">
+    <div className="aspect-square w-full bg-gray-50 flex items-center justify-center p-2">
       <img
         src={image || 'https://via.placeholder.com/150'}
         alt={title}
-        className="w-full h-full object-contain p-2"
+        className="max-h-full max-w-full object-contain"
       />
     </div>
 
-    <div className="p-2 md:p-4">
-      {/* Smaller text for mobile */}
-      <h3 className="text-xs md:text-lg font-semibold line-clamp-2 h-8 md:h-12">
+    <div className="p-2 md:p-4 flex flex-col flex-grow">
+      {/* Smaller text and line-clamping to keep cards even */}
+      <h3 className="text-xs md:text-lg font-bold line-clamp-2 h-8 md:h-12 mb-1">
         {title}
       </h3>
-      <p className="text-pmorange font-bold text-sm md:text-base mt-1">
+      <p className="text-pmorange font-bold text-sm md:text-xl mb-2">
         {price}
       </p>
 
-      <div className="mt-3 flex flex-col gap-1.5">
+      <div className="mt-auto flex flex-col gap-1.5">
         <button
           onClick={handleBuyNow}
-          className="w-full py-2 text-[10px] md:text-sm bg-pmorange text-white rounded font-bold"
+          className="w-full py-1.5 text-[10px] md:text-sm bg-pmorange text-white rounded-lg font-bold"
         >
           Buy Now
         </button>
