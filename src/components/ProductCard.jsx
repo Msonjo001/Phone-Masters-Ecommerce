@@ -15,45 +15,35 @@ export default function ProductCard({ id, title, price, image, description }) { 
     navigate('/checkout')
   }
 
-  return (
-    <div className="border rounded-lg shadow hover:shadow-md transition overflow-hidden">
-      {image ? (
-        <img
-          src={image}
-          alt={title}
-          className="w-full h-48 object-cover"
-          onError={(e) => {
-            e.target.src = 'https://via.placeholder.com/150?text=No+Image'
-          }}
-        />
-      ) : (
-        <img
-          src="https://via.placeholder.com/150?text=No+Image"
-          alt="No image"
-          className="w-full h-48 object-cover"
-        />
-      )}
+  // REPLACE your ProductCard.jsx return with this:
+rreturn (
+  <div className="border rounded-lg shadow-sm hover:shadow-md transition overflow-hidden flex flex-col bg-white">
+    <div className="aspect-square w-full bg-gray-50">
+      <img
+        src={image || 'https://via.placeholder.com/150'}
+        alt={title}
+        className="w-full h-full object-contain p-2"
+      />
+    </div>
 
-      <div className="p-4">
-        <h3 className="text-lg font-semibold">{title}</h3>
-        {description && <p className="text-gray-600 text-sm mb-2">{description}</p>}
-        <p className="text-pmorange font-medium">{price}</p>
+    <div className="p-2 md:p-4">
+      {/* Smaller text for mobile */}
+      <h3 className="text-xs md:text-lg font-semibold line-clamp-2 h-8 md:h-12">
+        {title}
+      </h3>
+      <p className="text-pmorange font-bold text-sm md:text-base mt-1">
+        {price}
+      </p>
 
-        <div className="mt-4 flex gap-2">
-          <button
-            onClick={handleAddToCart}
-            className="flex-1 px-3 py-2 text-sm bg-gray-200 rounded hover:bg-gray-300 transition"
-          >
-            Add to Cart
-          </button>
-          <button
-            onClick={handleBuyNow}
-            className="flex-1 px-3 py-2 text-sm bg-pmorange text-white rounded hover:bg-orange-500 transition"
-          >
-            Buy Now
-          </button>
-        </div>
+      <div className="mt-3 flex flex-col gap-1.5">
+        <button
+          onClick={handleBuyNow}
+          className="w-full py-2 text-[10px] md:text-sm bg-pmorange text-white rounded font-bold"
+        >
+          Buy Now
+        </button>
       </div>
     </div>
-  )
+  </div>
+);
 }

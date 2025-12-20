@@ -51,44 +51,51 @@ export default function Shop() {
 
   if (loading) return <p className="text-center mt-10">Loading products...</p>;
 
-  return (
-    <div className="py-10">
-      <h1 className="text-2xl font-semibold mb-6 text-center">🛒 Shop</h1>
+// REPLACE the return section of your Shop.jsx with this:
+return (
+  <div className="py-6 md:py-10 px-4 max-w-7xl mx-auto">
+    <h1 className="text-2xl md:text-3xl font-bold mb-6 text-center">🛒 Our Shop</h1>
 
-      {/* 🔍 Search & Sort Controls */}
-      <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-8 px-4">
+    {/* 🔍 Search & Sort: Stacked on mobile, side-by-side on PC */}
+    <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8 bg-gray-50 p-4 rounded-xl">
+      <div className="relative w-full md:w-1/2">
         <input
           type="text"
-          placeholder="Search products..."
+          placeholder="Search for a phone..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border rounded-lg p-2 w-full sm:w-1/2 focus:outline-none focus:ring-2 focus:ring-pmorange"
+          className="w-full border-2 border-gray-200 rounded-full py-2 px-10 focus:border-pmorange outline-none transition-all"
         />
-        <select
-          value={sortOrder}
-          onChange={(e) => setSortOrder(e.target.value)}
-          className="border rounded-lg p-2 w-full sm:w-40 focus:outline-none focus:ring-2 focus:ring-pmorange"
-        >
-          <option value="desc">Highest → Lowest</option>
-          <option value="asc">Lowest → Highest</option>
-        </select>
+        <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
       </div>
-
-      {filteredProducts.length === 0 ? (
-        <p className="text-center text-gray-600">No matching products found.</p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-6xl mx-auto px-4">
-          {filteredProducts.map((p) => (
-            <ProductCard
-              key={p.id}
-              title={p.title}
-              price={`KSh ${Number(p.price).toLocaleString()}`}
-              image={p.image}
-              description={p.description}
-            />
-          ))}
-        </div>
-      )}
+      
+      <select
+        value={sortOrder}
+        onChange={(e) => setSortOrder(e.target.value)}
+        className="border-2 border-gray-200 rounded-full p-2 w-full md:w-48 bg-white outline-none"
+      >
+        <option value="desc">Price: High to Low</option>
+        <option value="asc">Price: Low to High</option>
+      </select>
     </div>
-  );
+
+    {filteredProducts.length === 0 ? (
+      <div className="text-center py-20 text-gray-500">No products found...</div>
+    ) : (
+      /* GRID: 2 columns on small screens, 4 on desktop */
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6 mt-4">
+        {filteredProducts.map((p) => (
+          <ProductCard
+            key={p.id}
+            id={p.id}
+            title={p.title}
+            price={`KSh ${Number(p.price).toLocaleString()}`}
+            image={p.image}
+            description={p.description}
+          />
+        ))}
+      </div>
+    )}
+  </div>
+);
 }
