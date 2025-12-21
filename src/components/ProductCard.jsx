@@ -27,7 +27,6 @@ return (
     </div>
 
     <div className="p-2 md:p-4 flex flex-col flex-grow">
-      {/* Smaller text and line-clamping to keep cards even */}
       <h3 className="text-xs md:text-lg font-bold line-clamp-2 h-8 md:h-12 mb-1">
         {title}
       </h3>
@@ -36,6 +35,14 @@ return (
       </p>
 
       <div className="mt-auto flex flex-col gap-1.5">
+        {/* ✅ ADD TO CART BUTTON RESTORED */}
+        <button
+          onClick={handleAddToCart}
+          className="w-full py-1.5 text-[10px] md:text-sm bg-gray-100 text-gray-800 rounded-lg font-bold hover:bg-gray-200"
+        >
+          Add to Cart
+        </button>
+
         <button
           onClick={handleBuyNow}
           className="w-full py-1.5 text-[10px] md:text-sm bg-pmorange text-white rounded-lg font-bold"

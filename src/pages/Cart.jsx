@@ -7,9 +7,11 @@ export default function Cart() {
   const navigate = useNavigate()
 
   const total = cart.reduce((sum, item) => {
-    const numPrice = parseFloat(item.price.replace(/[^\d.]/g, ''))
-    return sum + numPrice
-  }, 0)
+  // Safe check if price exists and is a string
+  const priceString = String(item.price || "0");
+  const numPrice = parseFloat(priceString.replace(/[^\d.]/g, '')) || 0;
+  return sum + numPrice;
+}, 0);
 
   if (cart.length === 0) {
     return (
