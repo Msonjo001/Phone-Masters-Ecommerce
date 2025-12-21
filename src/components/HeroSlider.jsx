@@ -12,11 +12,6 @@ const fallbackAds = [
   { image_url: ad3, link: null },
 ];
 
-// 🔗 Supabase client (Using your provided keys)
-const supabaseUrl = "https://vnsubjweybalebejsope.supabase.co";
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuc3ViandleWJhbGViZWpzb3BlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxOTI0NTQsImV4cCI6MjA3Nzc2ODQ1NH0.GoAXho3AaN-ztly8yCDAPFEIVWbWlgNsV01b7NnSHA0";
-
-
 export default function HeroSlider() {
   const [ads, setAds] = useState(fallbackAds);
   const [current, setCurrent] = useState(0);
@@ -41,7 +36,7 @@ export default function HeroSlider() {
     fetchAds();
   }, []);
 
-  // Auto-slide every 5 seconds (slightly slower is better for reading on mobile)
+  // Auto-slide every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrent((prev) => (prev + 1) % ads.length);
@@ -49,7 +44,7 @@ export default function HeroSlider() {
     return () => clearInterval(interval);
   }, [ads.length]);
 
-  // 👋 Mobile Touch Functions (Swipe to change ads)
+  // 👋 Mobile Touch Functions
   const handleTouchStart = (e) => setTouchStart(e.targetTouches[0].clientX);
   const handleTouchMove = (e) => {
     if (!touchStart) return;
@@ -66,7 +61,8 @@ export default function HeroSlider() {
 
   return (
     <div 
-      className="relative w-full h-48 sm:h-64 md:h-80 lg:h-96 rounded-xl overflow-hidden shadow-md group mt-2"
+      /* Added min-h-[200px] to ensure it never collapses to 0 height on mobile */
+      className="relative w-full h-48 sm:h-64 md:h-80 lg:h-96 min-h-[200px] rounded-xl overflow-hidden shadow-md group mt-2"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
     >
@@ -78,24 +74,25 @@ export default function HeroSlider() {
           }`}
         >
           {ad.link ? (
-            <a href={ad.link} target="_blank" rel="noopener noreferrer">
+            <a href={ad.link} target="_blank" rel="noopener noreferrer" className="w-full h-full block">
               <img
                 src={ad.image_url}
                 alt="PhoneMasters Promotion"
-                className="w-full h-full object-cover"
+                /* Added object-center to keep the middle of the ad visible */
+                className="w-full h-full object-cover object-center"
               />
             </a>
           ) : (
             <img
               src={ad.image_url}
               alt="PhoneMasters Promotion"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-center"
             />
           )}
         </div>
       ))}
 
-      {/* Navigation Arrows (Visible on hover for PC) */}
+      {/* Navigation Arrows */}
       <button 
         onClick={() => setCurrent((prev) => (prev - 1 + ads.length) % ads.length)}
         className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-black/30 text-white p-2 rounded-full hidden group-hover:block"
