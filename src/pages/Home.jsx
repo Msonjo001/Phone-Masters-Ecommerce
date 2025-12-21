@@ -8,7 +8,6 @@ import { supabase } from '../supabaseClient.js';
 const supabaseUrl = "https://vnsubjweybalebejsope.supabase.co";
 const supabaseAnonKey =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuc3ViandleWJhbGViZWpzb3BlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxOTI0NTQsImV4cCI6MjA3Nzc2ODQ1NH0.GoAXho3AaN-ztly8yCDAPFEIVWbWlgNsV01b7NnSHA0";
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function Home() {
   const [featured, setFeatured] = useState([]);
