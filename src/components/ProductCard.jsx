@@ -33,6 +33,9 @@ return (
       <p className="text-pmorange font-bold text-sm md:text-xl mb-2">
         {price}
       </p>
+      <p className="text-[10px] md:text-sm text-gray-500 line-clamp-2 mt-1 mb-2 leading-tight">
+          {description || "No details available"}
+        </p>
 
       <div className="mt-auto flex flex-col gap-1.5">
         {/* ✅ ADD TO CART BUTTON RESTORED */}
