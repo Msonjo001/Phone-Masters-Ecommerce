@@ -31,8 +31,8 @@ export default function ProductCard({ id, title, price, image, description }) { 
         </h3>
         
         {/* ✅ RESTORED DESCRIPTION SECTION */}
-        <p className="text-[10px] md:text-sm text-gray-500 line-clamp-2 mb-2 leading-tight">
-          {description}
+        <p className="text-[11px] text-gray-500 line-clamp-2 mb-2 leading-tight">
+          {description || "No details available"}
         </p>
 
         <p className="text-pmorange font-bold text-sm md:text-xl mb-2">
