@@ -10,6 +10,11 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     detectSessionInUrl: true, // <-- required for OAuth / magic links
     flowType: "pkce",         // <-- required for modern Supabase auth
   },
+  realtime: {
+    params: {
+      eventsPerSecond: 1
+    }
+  },
   cookies: {
     name: "sb-session",
     sameSite: "lax",

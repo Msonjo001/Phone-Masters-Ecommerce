@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import ProductCard from "../components/ProductCard.jsx";
 import HeroSlider from "../components/HeroSlider.jsx";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from '../supabaseClient.js';
 
 // ✅ Supabase config
 const supabaseUrl = "https://vnsubjweybalebejsope.supabase.co";

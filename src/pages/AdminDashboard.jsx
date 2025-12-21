@@ -1,7 +1,7 @@
 // src/pages/AdminDashboard.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from '../supabaseClient.js';
 
 // ----- Supabase setup (keep your keys) -----
 const supabaseUrl = "https://vnsubjweybalebejsope.supabase.co";

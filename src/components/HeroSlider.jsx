@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from '../supabaseClient.js';
 
 // 🧡 Local fallback ads
 import ad1 from "../assets/ads/ad1.jpg";

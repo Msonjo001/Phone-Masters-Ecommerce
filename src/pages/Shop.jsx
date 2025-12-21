@@ -1,7 +1,7 @@
 // src/pages/Shop.jsx
 import React, { useEffect, useState } from "react";
 import ProductCard from "../components/ProductCard.jsx";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from '../supabaseClient.js';
 
 const supabaseUrl = "https://vnsubjweybalebejsope.supabase.co";
 const supabaseAnonKey =
