@@ -4,11 +4,6 @@ import ProductCard from "../components/ProductCard.jsx";
 import HeroSlider from "../components/HeroSlider.jsx";
 import { supabase } from '../supabaseClient.js';
 
-// ✅ Supabase config
-const supabaseUrl = "https://vnsubjweybalebejsope.supabase.co";
-const supabaseAnonKey =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuc3ViandleWJhbGViZWpzb3BlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxOTI0NTQsImV4cCI6MjA3Nzc2ODQ1NH0.GoAXho3AaN-ztly8yCDAPFEIVWbWlgNsV01b7NnSHA0";
-
 export default function Home() {
   const [featured, setFeatured] = useState([]);
   const [ads, setAds] = useState([]);
@@ -19,30 +14,32 @@ export default function Home() {
   }, []);
 
   // ✅ Get featured products
- const fetchFeatured = async () => {
-  const { data, error } = await supabase
-    .from("featured_products")
-    .select(`
-      id,
-      product_id,
-      products (
+  const fetchFeatured = async () => {
+    const { data, error } = await supabase
+      .from("featured_products")
+      .select(`
         id,
-        title,
-        price,
-        image
-      )
-    `)
-    .order("id", { ascending: false });
+        product_id,
+        products (
+          id,
+          title,
+          price,
+          image,
+          description
+        )
+      `)
+      .order("id", { ascending: false });
 
-  if (error) {
-    console.log("Supabase error:", error);
-    return;
-  }
+    if (error) {
+      console.log("Supabase error:", error);
+      return;
+    }
 
-  // flatten product object
-  const cleanData = data.map((item) => item.products);
-  setFeatured(cleanData);
-};
+    // flatten product object and include description
+    const cleanData = data.map((item) => item.products);
+    setFeatured(cleanData);
+  };
+
   // ✅ Get homepage ads
   const fetchAds = async () => {
     const { data, error } = await supabase
@@ -54,31 +51,31 @@ export default function Home() {
   };
 
   return (
-    <div>
-      {/* Hero Section */}
-      <section className="rounded-lg overflow-hidden flex flex-col md:flex-row items-center bg-gradient-to-r from-white to-gray-50 p-6">
-        <div className="flex-1">
-          <h1 className="text-3xl md:text-4xl font-bold">PhoneMasters Kenya</h1>
-          <p className="mt-3 text-gray-700 max-w-xl">
+    <div className="max-w-7xl mx-auto px-4">
+      {/* Hero Section - Improved stacking for mobile visibility */}
+      <section className="rounded-xl overflow-hidden flex flex-col lg:flex-row items-center bg-gradient-to-r from-white to-gray-50 p-6 gap-8">
+        <div className="w-full lg:flex-1 text-center lg:text-left">
+          <h1 className="text-3xl md:text-5xl font-bold">PhoneMasters Kenya</h1>
+          <p className="mt-3 text-gray-700 max-w-xl mx-auto lg:mx-0">
             Your one-stop shop for quality phones, accessories, and fast repairs.
           </p>
 
-          <div className="mt-6 flex gap-3">
-            <Link to="/shop" className="px-5 py-3 rounded bg-pmorange text-white">
+          <div className="mt-6 flex justify-center lg:justify-start gap-3">
+            <Link to="/shop" className="px-8 py-3 rounded-lg bg-pmorange text-white font-bold hover:bg-orange-600 transition-colors">
               Shop Now
             </Link>
           </div>
         </div>
 
-        <div className="flex-1 mt-6 md:mt-0 md:pl-8">
-          {/* ✅ Pass ads to HeroSlider */}
+        {/* This container now stays visible by taking full width on mobile */}
+        <div className="w-full lg:flex-1">
           <HeroSlider ads={ads} />
         </div>
       </section>
 
       {/* Featured Products */}
-      <section className="mt-12">
-        <h2 className="text-2xl font-semibold">Featured Products</h2>
+      <section className="mt-12 mb-10">
+        <h2 className="text-2xl font-bold border-b pb-2">Featured Products</h2>
 
         {featured.length === 0 ? (
           <p className="text-gray-500 mt-3">No featured products added yet.</p>
@@ -87,9 +84,11 @@ export default function Home() {
             {featured.map((item) => (
               <ProductCard
                 key={item.id}
+                id={item.id}
                 title={item.title}
                 price={`KSh ${item.price.toLocaleString()}`}
                 image={item.image}
+                description={item.description} // ✅ Now passing description to card
               />
             ))}
           </div>
