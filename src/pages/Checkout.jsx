@@ -3,11 +3,20 @@ import { useCart } from "../context/CartContext.jsx";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient.js";
 
-// Constant for the delivery fee
-const DELIVERY_FEE = 350;
+// ✅ 🇰🇪 All 47 Kenya Counties
+const KENYA_COUNTIES = [
+  "Nairobi", "Mombasa", "Kwale", "Kilifi", "Tana River", "Lamu", "Taita Taveta", 
+  "Garissa", "Wajir", "Mandera", "Marsabit", "Isiolo", "Meru", "Tharaka-Nithi", 
+  "Embu", "Kitui", "Machakos", "Makueni", "Nyandarua", "Nyeri", "Kirinyaga", 
+  "Murang'a", "Kiambu", "Turkana", "West Pokot", "Samburu", "Trans Nzoia", 
+  "Uasin Gishu", "Elgeyo-Marakwet", "Nandi", "Baringo", "Laikipia", "Nakuru", 
+  "Narok", "Kajiado", "Kericho", "Bomet", "Kakamega", "Vihiga", "Bungoma", 
+  "Busia", "Siaya", "Kisumu", "Homa Bay", "Migori", "Kisii", "Nyamira"
+];
 
 // Helper function to clean and parse the price string
 const cleanPrice = (priceString) => {
+    if (typeof priceString === 'number') return priceString;
     const numPrice = parseFloat(priceString.replace(/[^\d.]/g, ""));
     return isNaN(numPrice) ? 0 : numPrice;
 };
@@ -19,13 +28,16 @@ export default function Checkout() {
   const [form, setForm] = useState({
     name: "",
     phone: "",
-    address: "",
+    address: "Nairobi", // Default to Nairobi
+    specificLocation: "", // Added for detailed address
     note: "",
-    // REMOVED: paymentConfirmed state is no longer needed
   });
   
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false); 
+
+  // ✅ Logic: Nairobi is Free (0), others are 350
+  const deliveryFee = form.address === "Nairobi" ? 0 : 350;
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -35,13 +47,12 @@ export default function Checkout() {
     return sum + cleanPrice(item.price);
   }, 0);
 
-  const finalTotal = itemsTotal + DELIVERY_FEE;
+  const finalTotal = itemsTotal + deliveryFee;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true); // Start loading
+    setIsLoading(true); 
 
-    // Updated validation (removed paymentConfirmed check)
     if (!form.name || !form.phone || !form.address) {
       alert("Please fill in all required delivery fields.");
       setIsLoading(false); 
@@ -49,35 +60,29 @@ export default function Checkout() {
     }
 
     try {
-      // 1. SAVE PENDING ORDER AND GET ORDER ID
+      // 1. SAVE PENDING ORDER
       const orderRecords = cart.map((item) => ({
         name: form.name,
         phone: form.phone,
-        location: form.address,
-        email: "", // FIX RETAINED: Workaround for mandatory 'email' column
+        location: `${form.address} - ${form.specificLocation}`,
+        email: "", 
         product_id: item.id,
-        
-        // STATUS: Set to 'Initiated' (or 'Pending Payment')
         status: "Initiated", 
-        
         created_at: new Date().toISOString(),
         amount_paid: cleanPrice(item.price), 
       }));
 
-      // Perform batch insert and capture the returned data
       const { data: insertedOrders, error: insertError } = await supabase
         .from("orders")
         .insert(orderRecords)
-        .select('id'); // Requesting the primary key (id) back
+        .select('id');
 
       if (insertError) throw insertError;
       
-      // Get the ID of the first inserted order (assuming they are grouped by a single checkout)
       const firstOrderId = insertedOrders[0].id;
       
       // 2. INITIATE STK PUSH
       const response = await fetch(
-        // Ensure this URL is correct
         "https://vnsubjweybalebejsope.supabase.co/functions/v1/initiate-stk-push",
         {
           method: "POST",
@@ -86,10 +91,9 @@ export default function Checkout() {
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           },
           body: JSON.stringify({
-            // Pass the required M-Pesa data and the Order ID
             phone: form.phone.startsWith("0") ? `254${form.phone.substring(1)}` : form.phone,
             amount: finalTotal, 
-            orderId: firstOrderId, // Pass the ID back to the function
+            orderId: firstOrderId, 
           }),
         }
       );
@@ -97,18 +101,11 @@ export default function Checkout() {
       const responseData = await response.json();
 
       if (response.ok && responseData.success) {
-        // Success: STK push initiated, now waiting for M-Pesa callback
-        alert("✅ M-Pesa STK Push sent successfully! Check your phone for the PIN prompt.");
-        
-        // Show success, but DO NOT clear the cart yet. The callback will handle that.
+        alert("✅ M-Pesa STK Push sent! Check your phone for the PIN prompt.");
         setSuccess(true);
-        // We navigate back after a successful initiation
         setTimeout(() => navigate("/"), 5000); 
-
       } else {
-        // If STK initiation fails, update the order status back to 'Failed' (optional but helpful)
         await supabase.from("orders").update({ status: 'Payment Failed' }).eq('id', firstOrderId);
-        
         alert(`❌ Payment initiation failed: ${responseData.message || 'Unknown error'}`);
       }
 
@@ -116,87 +113,107 @@ export default function Checkout() {
       console.error("Order submission error:", err);
       alert("❌ Failed to initiate order/payment.");
     } finally {
-      setIsLoading(false); // Ensure loading is reset regardless of success/fail
+      setIsLoading(false); 
     }
   };
-
-  // ... (rest of the component remains the same, but the UI below is updated)
 
   if (success) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-pmorange mb-2">
-          Payment Initiated!
-        </h2>
-        <p>A prompt has been sent to your phone. Please complete the payment to finalize the order.</p>
+        <h2 className="text-2xl font-bold text-pmorange mb-2">Payment Initiated!</h2>
+        <p>A prompt has been sent to your phone. Please complete payment to finalize the order.</p>
         <p className="mt-4">You will be redirected shortly.</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-semibold mb-6">Checkout</h1>
+    <div className="max-w-6xl mx-auto px-4 py-6">
+      <h1 className="text-2xl md:text-3xl font-bold mb-8">Secure Checkout</h1>
 
       {cart.length === 0 ? (
-        <p>Your cart is empty.</p>
+        <div className="text-center py-20">Your cart is empty.</div>
       ) : (
-        <>
-          {/* Order Summary (Uses finalTotal) */}
-          <div className="border rounded-lg p-4 mb-6">
-            <h2 className="text-lg font-medium mb-2">Order Summary</h2>
-            
-            {cart.map((item, i) => (
-              <div key={i} className="flex justify-between border-b py-2 text-sm">
-                <span>{item.title}</span>
-                <span>{item.price}</span>
+        <div className="flex flex-col lg:flex-row gap-8">
+          
+          {/* LEFT: FORM */}
+          <div className="w-full lg:w-2/3 order-2 lg:order-1">
+            <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
+              <h2 className="text-xl font-semibold mb-4 border-b pb-2">Delivery Details</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="text" name="name" placeholder="Full Name" value={form.name} onChange={handleChange} className="w-full border rounded-lg p-3 outline-none focus:ring-2 focus:ring-pmorange" required />
+                <input type="tel" name="phone" placeholder="M-Pesa Number (e.g. 07...)" value={form.phone} onChange={handleChange} className="w-full border rounded-lg p-3 outline-none focus:ring-2 focus:ring-pmorange" required />
               </div>
-            ))}
-            
-            <div className="flex justify-between py-2 text-sm">
-              <span className="font-medium">Delivery Fee:</span>
-              <span>KSh {DELIVERY_FEE.toLocaleString()}</span>
-            </div>
+              
+              {/* ✅ COUNTY DROPDOWN */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-500 ml-1">Select County</label>
+                <select 
+                  name="address" 
+                  value={form.address} 
+                  onChange={handleChange} 
+                  className="w-full border rounded-lg p-3 outline-none focus:ring-2 focus:ring-pmorange bg-white"
+                >
+                  {KENYA_COUNTIES.map(county => (
+                    <option key={county} value={county}>{county}</option>
+                  ))}
+                </select>
+              </div>
 
-            <div className="flex justify-between font-semibold pt-3 text-lg border-t-2 border-dashed mt-2">
-              <span>Final Total:</span>
-              <span className="text-pmorange">
-                KSh {finalTotal.toLocaleString()}
-              </span>
+              <input 
+                type="text" 
+                name="specificLocation" 
+                placeholder="Specific Town / Estate / Landmark" 
+                value={form.specificLocation} 
+                onChange={handleChange} 
+                className="w-full border rounded-lg p-3 outline-none focus:ring-2 focus:ring-pmorange" 
+                required 
+              />
+
+              <textarea name="note" placeholder="Note to rider (Optional)" value={form.note} onChange={handleChange} className="w-full border rounded-lg p-3 outline-none focus:ring-2 focus:ring-pmorange" rows="2"></textarea>
+              
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-pmorange text-white py-4 rounded-xl text-lg font-bold hover:bg-orange-600 disabled:opacity-50 transition-all shadow-md mt-4"
+              >
+                {isLoading ? "⏳ Processing..." : `Complete Order KSh ${finalTotal.toLocaleString()}`}
+              </button>
+            </form>
+          </div>
+
+          {/* RIGHT: SUMMARY */}
+          <div className="w-full lg:w-1/3 order-1 lg:order-2">
+            <div className="bg-gray-50 p-6 rounded-2xl border sticky top-24">
+              <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
+              <div className="space-y-3 mb-4">
+                {cart.map((item, i) => (
+                  <div key={i} className="flex justify-between text-sm">
+                    <span className="text-gray-600">{item.title} (x1)</span>
+                    <span className="font-medium">{item.price}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t border-dashed pt-4 space-y-2">
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Subtotal</span>
+                  <span>KSh {itemsTotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Delivery ({form.address})</span>
+                  <span className={deliveryFee === 0 ? "text-green-600 font-bold" : "text-gray-900 font-medium"}>
+                    {deliveryFee === 0 ? "FREE" : `KSh ${deliveryFee.toLocaleString()}`}
+                  </span>
+                </div>
+                <div className="flex justify-between text-xl font-bold text-gray-900 pt-2">
+                  <span>Total</span>
+                  <span className="text-pmorange text-2xl">KSh {finalTotal.toLocaleString()}</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Payment Instructions (Updated for STK Push) */}
-          <div className="bg-gray-100 border-l-4 border-pmorange p-4 mb-6 rounded">
-            <h3 className="font-semibold text-pmorange mb-2">
-              M-Pesa Express Payment
-            </h3>
-            <p className="text-sm text-gray-700 mb-1">
-              Click **Pay Now** to receive the prompt on your phone for **KSh {finalTotal.toLocaleString()}**.
-            </p>
-            <p className="text-xs text-gray-600 mt-2">
-              Ensure your phone is near and unlocked.
-            </p>
-          </div>
-
-          {/* Checkout Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <input type="text" name="name" placeholder="Full Name" value={form.name} onChange={handleChange} className="w-full border rounded p-2" required />
-            <input type="tel" name="phone" placeholder="Phone Number" value={form.phone} onChange={handleChange} className="w-full border rounded p-2" required />
-            <input type="text" name="address" placeholder="Delivery Address / Town" value={form.address} onChange={handleChange} className="w-full border rounded p-2" required />
-            <textarea name="note" placeholder="Additional Notes (optional)" value={form.note} onChange={handleChange} className="w-full border rounded p-2" rows="3" ></textarea>
-
-            {/* REMOVED: Manual payment confirmation checkbox */}
-
-            <button
-              type="submit"
-              className="w-full bg-pmorange text-white py-3 rounded hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed text-lg font-bold"
-              disabled={isLoading || cart.length === 0} 
-            >
-              {isLoading ? "Initiating Payment..." : `Pay KSh ${finalTotal.toLocaleString()}`} 
-            </button>
-          </form>
-        </>
+        </div>
       )}
     </div>
   );

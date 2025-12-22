@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "../supabaseClient";
-import { useCart } from "../context/CartContext";
+import { supabase } from "../supabaseClient.js";
+import { useCart } from "../context/CartContext.jsx";
 
 export default function ProductDetails() {
   const { id } = useParams();
