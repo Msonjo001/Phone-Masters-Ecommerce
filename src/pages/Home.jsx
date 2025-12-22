@@ -88,7 +88,7 @@ export default function Home() {
                 title={item.title}
                 price={`KSh ${item.price.toLocaleString()}`}
                 image={item.image}
-                description={item.description} // ✅ Now passing description to card
+                description={item.description}
               />
             ))}
           </div>

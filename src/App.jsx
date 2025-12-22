@@ -13,7 +13,8 @@ import AdminDashboard from "./pages/AdminDashboard.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import UserProtectedRoute from "./components/UserProtectedRoute.jsx";
 import Navbar from './components/Navbar.jsx';
-import { useAuth } from './context/AuthContext.jsx'
+import { useAuth } from './context/AuthContext.jsx';
+import ProductDetails from "./pages/ProductDetails.jsx";
 
 export default function App() {
   const { user } = useAuth();
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/product/:id" element={<ProductDetails />} />
 
           {/* PROTECTED ROUTES */}
           <Route path="/admin-dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />

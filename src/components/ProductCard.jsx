@@ -16,7 +16,12 @@ export default function ProductCard({ id, title, price, image, description }) { 
   }
 
   return (
-    <div className="border rounded-xl shadow-sm hover:shadow-md transition overflow-hidden flex flex-col bg-white h-full">
+    <div className="border rounded-xl shadow-sm bg-white h-full flex flex-col overflow-hidden group">
+      {/* Clickable Area: Image & Title */}
+      <div 
+        onClick={() => navigate(`/product/${id}`)} 
+        className="cursor-pointer"
+      />
       <div className="aspect-square w-full bg-gray-50 flex items-center justify-center p-2">
         <img
           src={image || 'https://via.placeholder.com/150'}
