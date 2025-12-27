@@ -50,72 +50,71 @@ export default function Checkout() {
   const finalTotal = itemsTotal + deliveryFee;
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true); 
+  e.preventDefault();
+  setIsLoading(true); 
 
-    if (!form.name || !form.phone || !form.address) {
-      alert("Please fill in all required delivery fields.");
-      setIsLoading(false); 
-      return;
-    }
+  if (!form.name || !form.phone || !form.address) {
+    alert("Please fill in all required delivery fields.");
+    setIsLoading(false); 
+    return;
+  }
 
-    try {
-      // 1. SAVE PENDING ORDER
-      const orderRecords = cart.map((item) => ({
-        name: form.name,
-        phone: form.phone,
-        location: `${form.address} - ${form.specificLocation}`,
-        email: "", 
-        product_id: item.id,
-        status: "Initiated", 
-        created_at: new Date().toISOString(),
-        amount_paid: cleanPrice(item.price), 
-      }));
+  try {
+    // 1. SAVE ORDER (Removed .select('id'))
+    const orderRecords = cart.map((item) => ({
+      name: form.name,
+      phone: form.phone,
+      location: `${form.address} - ${form.specificLocation}`,
+      email: "", 
+      product_id: item.id,
+      status: "Initiated", 
+      created_at: new Date().toISOString(),
+      amount_paid: cleanPrice(item.price), 
+    }));
 
-      const { data: insertedOrders, error: insertError } = await supabase
-        .from("orders")
-        .insert(orderRecords)
-        .select('id');
+    const { error: insertError } = await supabase
+      .from("orders")
+      .insert(orderRecords); // Logic updated: no .select()
 
-      if (insertError) throw insertError;
-      
-      const firstOrderId = insertedOrders[0].id;
-      
-      // 2. INITIATE STK PUSH
-      const response = await fetch(
-        "https://vnsubjweybalebejsope.supabase.co/functions/v1/initiate-stk-push",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({
-            phone: form.phone.startsWith("0") ? `254${form.phone.substring(1)}` : form.phone,
-            amount: finalTotal, 
-            orderId: firstOrderId, 
-          }),
-        }
-      );
+    if (insertError) throw insertError;
+    
+    // 2. INITIATE STK PUSH
+    // Since we don't have the DB ID, we use the timestamp or phone as a temp reference
+    const tempReference = `ORDER-${Date.now()}`;
 
-      const responseData = await response.json();
-
-      if (response.ok && responseData.success) {
-        alert("✅ M-Pesa STK Push sent! Check your phone for the PIN prompt.");
-        setSuccess(true);
-        setTimeout(() => navigate("/"), 5000); 
-      } else {
-        await supabase.from("orders").update({ status: 'Payment Failed' }).eq('id', firstOrderId);
-        alert(`❌ Payment initiation failed: ${responseData.message || 'Unknown error'}`);
+    const response = await fetch(
+      "https://vnsubjweybalebejsope.supabase.co/functions/v1/initiate-stk-push",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          phone: form.phone.startsWith("0") ? `254${form.phone.substring(1)}` : form.phone,
+          amount: finalTotal, 
+          orderId: tempReference, // Send a temp reference instead of DB ID
+        }),
       }
+    );
 
-    } catch (err) {
-      console.error("Order submission error:", err);
-      alert("❌ Failed to initiate order/payment.");
-    } finally {
-      setIsLoading(false); 
+    const responseData = await response.json();
+
+    if (response.ok && responseData.success) {
+      alert("✅ M-Pesa STK Push sent! Check your phone for the PIN prompt.");
+      setSuccess(true);
+      setTimeout(() => navigate("/"), 5000); 
+    } else {
+      alert(`❌ Payment initiation failed: ${responseData.message || 'Unknown error'}`);
     }
-  };
+
+  } catch (err) {
+    console.error("Order submission error:", err);
+    alert("❌ Failed to initiate order/payment.");
+  } finally {
+    setIsLoading(false); 
+  }
+};
 
   if (success) {
     return (
