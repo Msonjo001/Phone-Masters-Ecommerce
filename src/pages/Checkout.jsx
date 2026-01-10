@@ -60,7 +60,7 @@ const handleSubmit = async (e) => {
     }
 
     try {
-      // 1. SAVE ORDER (Structured for RLS compatibility)
+      // 1. Prepare Order Data
       const orderRecords = cart.map((item) => ({
         name: form.name,
         phone: form.phone,
@@ -72,19 +72,19 @@ const handleSubmit = async (e) => {
         amount_paid: cleanPrice(item.price),
       }));
 
-      // We remove .select() entirely to ensure the RLS 'INSERT' policy is used alone
+      // ✅ STRICT INSERT: No .select() call to ensure RLS policies are not violated
       const { error: insertError } = await supabase
         .from("orders")
         .insert(orderRecords);
 
       if (insertError) {
-        // If error 42501 still appears, it's a database policy setting, not the code
+        console.error("Supabase Error:", insertError);
         throw insertError;
       }
 
       // 2. INITIATE STK PUSH
-      // We generate a custom reference since we aren't reading the ID back from the DB
-      const tempReference = `PM-${Date.now()}-${form.phone.slice(-4)}`;
+      // We generate a temp ID because we are not reading the database ID back
+      const tempReference = `PM-${Date.now()}`;
 
       const response = await fetch(
         "https://vnsubjweybalebejsope.supabase.co/functions/v1/initiate-stk-push",
@@ -97,7 +97,7 @@ const handleSubmit = async (e) => {
           body: JSON.stringify({
             phone: form.phone.startsWith("0") ? `254${form.phone.substring(1)}` : form.phone,
             amount: finalTotal,
-            orderId: tempReference,
+            orderId: tempReference, 
           }),
         }
       );
@@ -115,8 +115,9 @@ const handleSubmit = async (e) => {
         alert(`❌ Payment initiation failed: ${responseData.message || "Unknown error"}`);
       }
     } catch (err) {
+      // ✅ This captures the 42501 error and tells you if it's still a policy issue
       console.error("Order submission error:", err);
-      alert(`❌ Database Error: ${err.message || "Check your Supabase RLS policies"}`);
+      alert(`❌ Database Error: ${err.message || "New row violates security policy"}`);
     } finally {
       setIsLoading(false);
     }
