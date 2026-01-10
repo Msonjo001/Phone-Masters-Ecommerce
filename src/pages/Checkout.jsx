@@ -49,72 +49,78 @@ export default function Checkout() {
 
   const finalTotal = itemsTotal + deliveryFee;
 
-  const handleSubmit = async (e) => {
-  e.preventDefault();
-  setIsLoading(true); 
+const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
 
-  if (!form.name || !form.phone || !form.address) {
-    alert("Please fill in all required delivery fields.");
-    setIsLoading(false); 
-    return;
-  }
-
-  try {
-    // 1. SAVE ORDER (Removed .select('id'))
-    const orderRecords = cart.map((item) => ({
-      name: form.name,
-      phone: form.phone,
-      location: `${form.address} - ${form.specificLocation}`,
-      email: "", 
-      product_id: item.id,
-      status: "Initiated", 
-      created_at: new Date().toISOString(),
-      amount_paid: cleanPrice(item.price), 
-    }));
-
-    const { error: insertError } = await supabase
-      .from("orders")
-      .insert(orderRecords); // Logic updated: no .select()
-
-    if (insertError) throw insertError;
-    
-    // 2. INITIATE STK PUSH
-    // Since we don't have the DB ID, we use the timestamp or phone as a temp reference
-    const tempReference = `ORDER-${Date.now()}`;
-
-    const response = await fetch(
-      "https://vnsubjweybalebejsope.supabase.co/functions/v1/initiate-stk-push",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          phone: form.phone.startsWith("0") ? `254${form.phone.substring(1)}` : form.phone,
-          amount: finalTotal, 
-          orderId: tempReference, // Send a temp reference instead of DB ID
-        }),
-      }
-    );
-
-    const responseData = await response.json();
-
-    if (response.ok && responseData.success) {
-      alert("✅ M-Pesa STK Push sent! Check your phone for the PIN prompt.");
-      setSuccess(true);
-      setTimeout(() => navigate("/"), 5000); 
-    } else {
-      alert(`❌ Payment initiation failed: ${responseData.message || 'Unknown error'}`);
+    if (!form.name || !form.phone || !form.address) {
+      alert("Please fill in all required delivery fields.");
+      setIsLoading(false);
+      return;
     }
 
-  } catch (err) {
-    console.error("Order submission error:", err);
-    alert("❌ Failed to initiate order/payment.");
-  } finally {
-    setIsLoading(false); 
-  }
-};
+    try {
+      // 1. SAVE ORDER (Structured for RLS compatibility)
+      const orderRecords = cart.map((item) => ({
+        name: form.name,
+        phone: form.phone,
+        location: `${form.address} - ${form.specificLocation}`,
+        email: "",
+        product_id: item.id,
+        status: "Initiated",
+        created_at: new Date().toISOString(),
+        amount_paid: cleanPrice(item.price),
+      }));
+
+      // We remove .select() entirely to ensure the RLS 'INSERT' policy is used alone
+      const { error: insertError } = await supabase
+        .from("orders")
+        .insert(orderRecords);
+
+      if (insertError) {
+        // If error 42501 still appears, it's a database policy setting, not the code
+        throw insertError;
+      }
+
+      // 2. INITIATE STK PUSH
+      // We generate a custom reference since we aren't reading the ID back from the DB
+      const tempReference = `PM-${Date.now()}-${form.phone.slice(-4)}`;
+
+      const response = await fetch(
+        "https://vnsubjweybalebejsope.supabase.co/functions/v1/initiate-stk-push",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            phone: form.phone.startsWith("0") ? `254${form.phone.substring(1)}` : form.phone,
+            amount: finalTotal,
+            orderId: tempReference,
+          }),
+        }
+      );
+
+      const responseData = await response.json();
+
+      if (response.ok && responseData.success) {
+        alert("✅ M-Pesa STK Push sent! Check your phone for the PIN prompt.");
+        setSuccess(true);
+        setTimeout(() => {
+          clearCart();
+          navigate("/");
+        }, 5000);
+      } else {
+        alert(`❌ Payment initiation failed: ${responseData.message || "Unknown error"}`);
+      }
+    } catch (err) {
+      console.error("Order submission error:", err);
+      alert(`❌ Database Error: ${err.message || "Check your Supabase RLS policies"}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (success) {
     return (
