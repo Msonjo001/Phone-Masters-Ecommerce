@@ -50,78 +50,69 @@ export default function Checkout() {
   const finalTotal = itemsTotal + deliveryFee;
 
 const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
+  e.preventDefault();
+  setIsLoading(true);
 
-    if (!form.name || !form.phone || !form.address) {
-      alert("Please fill in all required delivery fields.");
-      setIsLoading(false);
-      return;
+  try {
+    // 1. Prepare only the columns we know exist and are required
+    const orderRecords = cart.map((item) => ({
+      name: form.name,
+      phone: form.phone,
+      location: `${form.address} - ${form.specificLocation}`,
+      product_id: item.id,
+      status: "Initiated",
+      amount_paid: cleanPrice(item.price)
+    }));
+
+    // ✅ CLEAN INSERT: We removed .select() and any reference to returned data.
+    // This bypasses the SELECT policy check entirely.
+    const { error: insertError } = await supabase
+      .from("orders")
+      .insert(orderRecords);
+
+    if (insertError) {
+      console.error("Supabase Insert Error:", insertError);
+      throw insertError;
     }
 
-    try {
-      // 1. Prepare Order Data
-      const orderRecords = cart.map((item) => ({
-        name: form.name,
-        phone: form.phone,
-        location: `${form.address} - ${form.specificLocation}`,
-        email: "",
-        product_id: item.id,
-        status: "Initiated",
-        created_at: new Date().toISOString(),
-        amount_paid: cleanPrice(item.price),
-      }));
+    // 2. INITIATE STK PUSH (Independent of the DB ID)
+    const tempReference = `ORD-${Date.now()}`;
 
-      // ✅ STRICT INSERT: No .select() call to ensure RLS policies are not violated
-      const { error: insertError } = await supabase
-        .from("orders")
-        .insert(orderRecords);
-
-      if (insertError) {
-        console.error("Supabase Error:", insertError);
-        throw insertError;
+    const response = await fetch(
+      "https://vnsubjweybalebejsope.supabase.co/functions/v1/initiate-stk-push",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          phone: form.phone.startsWith("0") ? `254${form.phone.substring(1)}` : form.phone,
+          amount: finalTotal,
+          orderId: tempReference, 
+        }),
       }
+    );
 
-      // 2. INITIATE STK PUSH
-      // We generate a temp ID because we are not reading the database ID back
-      const tempReference = `PM-${Date.now()}`;
+    const responseData = await response.json();
 
-      const response = await fetch(
-        "https://vnsubjweybalebejsope.supabase.co/functions/v1/initiate-stk-push",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({
-            phone: form.phone.startsWith("0") ? `254${form.phone.substring(1)}` : form.phone,
-            amount: finalTotal,
-            orderId: tempReference, 
-          }),
-        }
-      );
-
-      const responseData = await response.json();
-
-      if (response.ok && responseData.success) {
-        alert("✅ M-Pesa STK Push sent! Check your phone for the PIN prompt.");
-        setSuccess(true);
-        setTimeout(() => {
-          clearCart();
-          navigate("/");
-        }, 5000);
-      } else {
-        alert(`❌ Payment initiation failed: ${responseData.message || "Unknown error"}`);
-      }
-    } catch (err) {
-      // ✅ This captures the 42501 error and tells you if it's still a policy issue
-      console.error("Order submission error:", err);
-      alert(`❌ Database Error: ${err.message || "New row violates security policy"}`);
-    } finally {
-      setIsLoading(false);
+    if (response.ok && responseData.success) {
+      alert("✅ Order Placed! Check your phone for M-Pesa prompt.");
+      setSuccess(true);
+      setTimeout(() => {
+        clearCart();
+        navigate("/");
+      }, 5000);
+    } else {
+      alert(`❌ Payment error: ${responseData.message || "Unknown error"}`);
     }
-  };
+  } catch (err) {
+    console.error("Order submission error:", err);
+    alert(`❌ Database Policy Error: ${err.message}`);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   if (success) {
     return (
