@@ -61,7 +61,7 @@ const handleSubmit = async (e) => {
       location: `${form.address} - ${form.specificLocation}`,
       product_id: item.id,
       status: "Initiated",
-      amount_paid: cleanPrice(item.price)
+      amount_paid: Number(cleanPrice(item.price)) || 0
     }));
 
     // ✅ CLEAN INSERT: We removed .select() and any reference to returned data.

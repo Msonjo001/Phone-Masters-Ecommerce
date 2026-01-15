@@ -13,7 +13,7 @@ export default function Home() {
     fetchAds();
   }, []);
 
-  // ✅ Get featured products
+
   const fetchFeatured = async () => {
     const { data, error } = await supabase
       .from("featured_products")
