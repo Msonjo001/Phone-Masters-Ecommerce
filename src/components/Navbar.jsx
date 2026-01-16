@@ -13,7 +13,7 @@ export default function Navbar() {
   const toggleMobileMenu = () => setIsOpen(!isOpen);
 
   // Helper to get the user's name from metadata if it's not directly on the user object
-  const displayName = user?.user_metadata?.full_name || user?.name || "Account";
+  const displayName = user?.user_metadata?.full_name || user?.phone || "Account";
 
   return (
     <nav className="bg-white border-b sticky top-0 z-50">

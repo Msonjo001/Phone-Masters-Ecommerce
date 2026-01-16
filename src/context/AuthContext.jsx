@@ -1,13 +1,6 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { auth, firestore } from "../firebaseConfig";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-} from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { supabase } from "../supabaseClient.js"; // Ensure path is correct
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
@@ -16,39 +9,30 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Watch auth state
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        const userDoc = await getDoc(doc(firestore, "users", firebaseUser.uid));
-        setUser({ uid: firebaseUser.uid, ...userDoc.data() });
-      } else {
-        setUser(null);
-      }
+    // 1. Check active sessions on load
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+      setLoading(false);
+    };
+    getSession();
+
+    // 2. Listen for login/logout changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
       setLoading(false);
     });
-    return () => unsubscribe();
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  // Register
-  const register = async (email, password, name) => {
-    const res = await createUserWithEmailAndPassword(auth, email, password);
-    await setDoc(doc(firestore, "users", res.user.uid), {
-      name,
-      email,
-      role: "buyer",
-      createdAt: new Date(),
-    });
+  // Logout function
+  const logout = async () => {
+    await supabase.auth.signOut();
   };
 
-  // Login
-  const login = (email, password) =>
-    signInWithEmailAndPassword(auth, email, password);
-
-  // Logout
-  const logout = () => signOut(auth);
-
-  const value = { user, login, register, logout };
+  const value = { user, logout };
 
   return (
     <AuthContext.Provider value={value}>
