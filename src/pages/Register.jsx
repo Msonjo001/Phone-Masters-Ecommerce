@@ -1,160 +1,139 @@
 import React, { useState } from "react";
-import { supabase } from "../supabaseClient.js"; // Ensure this matches your setup
+import { supabase } from "../supabaseClient.js";
 import { useNavigate } from "react-router-dom";
 
 export default function Register() {
-  const [step, setStep] = useState(1); // 1: Info, 2: OTP Verification
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
-  const [error, setError] = useState("");
+  const [step, setStep] = useState(1); // 1: Info, 2: OTP
+  const [method, setMethod] = useState("email"); // 'email' or 'phone'
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    otp: ""
+  });
+
   const navigate = useNavigate();
 
-  // Step 1: Request the OTP
   const handleRegister = async (e) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
-
-    // Format phone to E.164 (e.g., +254700000000)
-    const formattedPhone = phone.startsWith("0") 
-      ? `+254${phone.substring(1)}` 
-      : phone.startsWith("+") ? phone : `+${phone}`;
+    setError("");
 
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: formattedPhone,
+      // 1. Create the user account with Email & Password
+      // This creates the identity in Supabase Auth
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: form.email,
+        password: form.password,
         options: {
-          // This saves the name into the user's metadata in Supabase Auth
-          data: { full_name: name } 
+          data: { 
+            full_name: form.name,
+            phone_number: form.phone 
+          }
         }
       });
 
-      if (error) throw error;
-      
-      setStep(2); // Move to OTP input
+      if (signUpError) throw signUpError;
+
+      // 2. Trigger the OTP to the chosen destination
+      if (method === "phone") {
+        const formattedPhone = form.phone.startsWith("0") ? `+254${form.phone.substring(1)}` : form.phone;
+        const { error: otpError } = await supabase.auth.signInWithOtp({ 
+            phone: formattedPhone 
+        });
+        if (otpError) throw otpError;
+      }
+      // If method is email, Supabase automatically sends a confirmation link/OTP 
+      // based on your "Auth > Providers > Email" settings.
+
+      setStep(2);
     } catch (err) {
-      setError(err.message || "Failed to send OTP. Check your phone number.");
-      console.error(err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Step 2: Verify the OTP
-  const handleVerifyOtp = async (e) => {
+  const handleVerify = async (e) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
-
-    const formattedPhone = phone.startsWith("0") 
-      ? `+254${phone.substring(1)}` 
-      : phone;
-
     try {
-      const { error, data } = await supabase.auth.verifyOtp({
-        phone: formattedPhone,
-        token: otp,
-        type: 'sms',
-      });
-
-      if (error) throw error;
-
-      if (data.user) {
-        alert("Account verified successfully!");
-        navigate("/"); // Go to home page
+      let result;
+      if (method === "phone") {
+        const formattedPhone = form.phone.startsWith("0") ? `+254${form.phone.substring(1)}` : form.phone;
+        result = await supabase.auth.verifyOtp({ 
+            phone: formattedPhone, 
+            token: form.otp, 
+            type: 'sms' 
+        });
+      } else {
+        result = await supabase.auth.verifyOtp({ 
+            email: form.email, 
+            token: form.otp, 
+            type: 'signup' 
+        });
       }
+
+      if (result.error) throw result.error;
+      
+      alert("Registration Successful!");
+      navigate("/");
     } catch (err) {
-      setError("Invalid or expired OTP code.");
+      setError("Verification failed: " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex justify-center items-center h-screen bg-gray-100 p-4">
-      <div className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-2 text-center text-pmorange">
-          PhoneMasters Kenya
-        </h2>
-        <p className="text-gray-500 text-center mb-6">
-          {step === 1 ? "Create your account" : "Verify your phone number"}
-        </p>
-
-        {error && <p className="bg-red-100 text-red-600 p-3 rounded-lg text-sm mb-4">{error}</p>}
+    <div className="flex justify-center items-center min-h-screen bg-gray-50 p-4 font-sans">
+      <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md border border-gray-100">
+        <h2 className="text-3xl font-black text-center text-pmorange mb-2">PhoneMasters</h2>
+        <p className="text-gray-400 text-center mb-8 font-medium">Register your account</p>
+        
+        {error && <div className="bg-red-50 text-red-600 p-4 rounded-xl text-xs mb-6 border border-red-100 font-bold">{error}</div>}
 
         {step === 1 ? (
-          /* REGISTRATION FORM */
           <form onSubmit={handleRegister} className="space-y-4">
-            <div>
-              <label className="text-sm font-semibold text-gray-600">Full Name</label>
-              <input
-                type="text"
-                placeholder="George Konde"
-                className="border rounded-lg w-full p-3 mt-1 focus:ring-2 focus:ring-pmorange outline-none"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
+            <input type="text" placeholder="Full Name" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-pmorange" required
+              onChange={e => setForm({...form, name: e.target.value})} />
+            
+            <input type="email" placeholder="Email Address" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-pmorange" required
+              onChange={e => setForm({...form, email: e.target.value})} />
+
+            <input type="tel" placeholder="Phone (07...)" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-pmorange" required
+              onChange={e => setForm({...form, phone: e.target.value})} />
+
+            <input type="password" placeholder="Create Password" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-pmorange" required
+              onChange={e => setForm({...form, password: e.target.value})} />
+
+            <div className="p-4 bg-gray-100 rounded-2xl">
+              <p className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">Verify via:</p>
+              <div className="flex gap-4">
+                <button type="button" onClick={() => setMethod("email")} className={`flex-1 py-2 rounded-xl font-bold text-xs ${method === 'email' ? 'bg-white text-pmorange shadow-sm' : 'text-gray-400'}`}>EMAIL</button>
+                <button type="button" onClick={() => setMethod("phone")} className={`flex-1 py-2 rounded-xl font-bold text-xs ${method === 'phone' ? 'bg-white text-pmorange shadow-sm' : 'text-gray-400'}`}>SMS (TWILIO)</button>
+              </div>
             </div>
-            <div>
-              <label className="text-sm font-semibold text-gray-600">Phone Number</label>
-              <input
-                type="tel"
-                placeholder="0742..."
-                className="border rounded-lg w-full p-3 mt-1 focus:ring-2 focus:ring-pmorange outline-none"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-pmorange text-white py-3 rounded-lg font-bold hover:bg-opacity-90 transition"
-            >
-              {loading ? "Sending SMS..." : "Register & Get OTP"}
+
+            <button disabled={loading} className="w-full bg-pmorange text-white py-4 rounded-2xl font-black shadow-lg hover:scale-[1.01] transition-transform">
+              {loading ? "SENDING CODE..." : "REGISTER"}
             </button>
           </form>
         ) : (
-          /* OTP VERIFICATION FORM */
-          <form onSubmit={handleVerifyOtp} className="space-y-4">
-            <p className="text-sm text-center text-gray-600">
-              Enter the 6-digit code sent to <b>{phone}</b>
-            </p>
-            <input
-              type="text"
-              placeholder="123456"
-              maxLength={6}
-              className="border rounded-lg w-full p-4 text-center text-2xl tracking-[1rem] font-bold focus:ring-2 focus:ring-green-500 outline-none"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              required
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition"
-            >
-              {loading ? "Verifying..." : "Confirm & Sign In"}
-            </button>
-            <button 
-              type="button" 
-              onClick={() => setStep(1)} 
-              className="w-full text-gray-500 text-sm"
-            >
-              Change Phone Number
-            </button>
+          <form onSubmit={handleVerify} className="space-y-6">
+            <div className="text-center">
+              <p className="text-gray-500 text-sm">Verify the code sent to</p>
+              <p className="font-bold text-gray-800">{method === 'email' ? form.email : form.phone}</p>
+            </div>
+            <input type="text" placeholder="######" className="w-full p-4 border-2 border-gray-100 rounded-2xl text-center text-3xl font-black tracking-widest focus:border-pmorange outline-none"
+              onChange={e => setForm({...form, otp: e.target.value})} required maxLength={6} />
+            <button className="w-full bg-black text-white py-4 rounded-2xl font-black">CONFIRM OTP</button>
           </form>
         )}
-
-        <p
-          onClick={() => navigate("/login")}
-          className="text-sm text-center mt-6 text-pmorange cursor-pointer hover:underline"
-        >
-          Already have an account? Login
-        </p>
       </div>
     </div>
   );
