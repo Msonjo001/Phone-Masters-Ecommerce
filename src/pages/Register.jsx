@@ -6,6 +6,7 @@ export default function Register() {
   const [step, setStep] = useState(1); // 1: Info Form, 2: OTP Verification
   const [method, setMethod] = useState("email"); // Selection for OTP destination
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // ✅ Added for password toggle
   const [error, setError] = useState("");
   
   const [form, setForm] = useState({
@@ -13,7 +14,7 @@ export default function Register() {
     email: "",
     phone: "",
     password: "",
-    otp: "" // This is the state we are updating with the onchange
+    otp: "" 
   });
 
   const navigate = useNavigate();
@@ -24,23 +25,23 @@ export default function Register() {
     setError("");
 
     try {
-      // 1. Create User Identity in Supabase with Email/Password
+      // Logic for Kenyan phone formatting
+      const formattedPhone = form.phone.startsWith("0") ? `+254${form.phone.substring(1)}` : form.phone.startsWith("+") ? form.phone : `+254${form.phone}`;
+
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
         options: {
           data: { 
             full_name: form.name,
-            phone_number: form.phone 
+            phone_number: formattedPhone 
           }
         }
       });
 
       if (signUpError) throw signUpError;
 
-      // 2. Trigger OTP based on user preference
       if (method === "phone") {
-        const formattedPhone = form.phone.startsWith("0") ? `+254${form.phone.substring(1)}` : form.phone;
         const { error: otpError } = await supabase.auth.signInWithOtp({ 
             phone: formattedPhone 
         });
@@ -59,18 +60,19 @@ export default function Register() {
     e.preventDefault();
     setLoading(true);
     try {
+      const formattedPhone = form.phone.startsWith("0") ? `+254${form.phone.substring(1)}` : form.phone.startsWith("+") ? form.phone : `+254${form.phone}`;
+      
       let result;
       if (method === "phone") {
-        const formattedPhone = form.phone.startsWith("0") ? `+254${form.phone.substring(1)}` : form.phone;
         result = await supabase.auth.verifyOtp({ 
             phone: formattedPhone, 
-            token: form.otp, // Uses the state from the onchange
+            token: form.otp, 
             type: 'sms' 
         });
       } else {
         result = await supabase.auth.verifyOtp({ 
             email: form.email, 
-            token: form.otp, // Uses the state from the onchange
+            token: form.otp, 
             type: 'signup' 
         });
       }
@@ -104,13 +106,28 @@ export default function Register() {
               value={form.email}
               onChange={e => setForm({...form, email: e.target.value})} />
 
-            <input type="tel" placeholder="Phone (07...)" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-pmorange" required
-              value={form.phone}
-              onChange={e => setForm({...form, phone: e.target.value})} />
+            {/* ✅ Added Prefix UI for Phone */}
+            <div className="relative">
+              <span className="absolute left-4 top-4 text-gray-400 font-bold">+254</span>
+              <input type="tel" placeholder="712345678" className="w-full p-4 pl-16 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-pmorange" required
+                value={form.phone}
+                onChange={e => setForm({...form, phone: e.target.value})} />
+            </div>
 
-            <input type="password" placeholder="Create Password" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-pmorange" required
-              value={form.password}
-              onChange={e => setForm({...form, password: e.target.value})} />
+            {/* ✅ Added Show/Hide Password Toggle */}
+            <div className="relative">
+              <input type={showPassword ? "text" : "password"} placeholder="Create Password" 
+                className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-pmorange" required
+                value={form.password}
+                onChange={e => setForm({...form, password: e.target.value})} />
+              <button 
+                type="button" 
+                onClick={() => setShowPassword(!showPassword)} 
+                className="absolute right-4 top-4 text-xs font-bold text-gray-400 uppercase tracking-tighter"
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
 
             <div className="p-4 bg-gray-100 rounded-2xl">
               <p className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-widest">Receive OTP via:</p>
@@ -131,13 +148,14 @@ export default function Register() {
               <p className="font-bold text-gray-800">{method === 'email' ? form.email : form.phone}</p>
             </div>
             
-            {/* ✅ FIXED OTP INPUT WITH ONCHANGE */}
+            {/* ✅ Numeric-only OTP input with handle function */}
             <input 
               type="text" 
-              placeholder="● ● ● ● ● ●" 
+              inputMode="numeric"
+              placeholder="0 0 0 0 0 0" 
               className="w-full p-5 border-2 border-gray-100 rounded-2xl text-center text-3xl font-black tracking-widest focus:border-pmorange outline-none"
               value={form.otp}
-              onChange={e => setForm({...form, otp: e.target.value})} 
+              onChange={e => setForm({...form, otp: e.target.value.replace(/\D/g, '')})} 
               required 
               maxLength={6} 
             />
