@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import logo from '../assets/logo.png';
 
-
 export default function Navbar() {
   const { user, logout } = useAuth();
   const { cartCount } = useCart();
@@ -13,17 +12,20 @@ export default function Navbar() {
 
   const toggleMobileMenu = () => setIsOpen(!isOpen);
 
+  // Helper to get the user's name from metadata if it's not directly on the user object
+  const displayName = user?.user_metadata?.full_name || user?.name || "Account";
+
   return (
     <nav className="bg-white border-b sticky top-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         
-       {/* LOGO + BRAND */}
-<Link to="/" className="flex items-center gap-2 max-w-[65%]">
-  <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
-  <span className="text-base md:text-xl font-bold leading-tight truncate">
-    PhoneMasters <span className="text-pmorange">Ke</span>
-  </span>
-</Link>
+        {/* LOGO + BRAND */}
+        <Link to="/" className="flex items-center gap-2 max-w-[65%]">
+          <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
+          <span className="text-base md:text-xl font-bold leading-tight truncate">
+            PhoneMasters <span className="text-pmorange">Ke</span>
+          </span>
+        </Link>
 
         {/* PC NAV LINKS (Hidden on Mobile) */}
         <div className="hidden md:flex items-center gap-6 font-medium text-gray-700">
@@ -49,15 +51,20 @@ export default function Navbar() {
           <div className="hidden md:block">
             {user ? (
               <div className="relative">
-                <button onClick={() => setOpenMenu(!openMenu)} className="px-4 py-1.5 border rounded-lg bg-gray-50 flex items-center gap-2">
-                  {user.name || "Account"} ▾
+                <button onClick={() => setOpenMenu(!openMenu)} className="px-4 py-1.5 border rounded-lg bg-gray-50 flex items-center gap-2 font-bold text-sm text-gray-700">
+                  {displayName} ▾
                 </button>
                 {openMenu && (
                   <div className="absolute right-0 mt-2 w-48 bg-white shadow-xl border rounded-xl py-2 z-[60]">
-                    {user.role === 'admin' && (
-                      <Link to="/admin-dashboard" onClick={() => setOpenMenu(false)} className="block px-4 py-2 hover:bg-gray-100">Admin Dashboard</Link>
-                    )}
-                    <button onClick={() => { logout(); setOpenMenu(false); }} className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50">Logout</button>
+                    {user.user_metadata?.role === 'admin' || user.role === 'admin' ? (
+                      <Link to="/admin-dashboard" onClick={() => setOpenMenu(false)} className="block px-4 py-2 hover:bg-gray-100 font-medium">Admin Dashboard</Link>
+                    ) : null}
+                    <button 
+                      onClick={() => { logout(); setOpenMenu(false); }} 
+                      className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 font-bold"
+                    >
+                      Logout
+                    </button>
                   </div>
                 )}
               </div>
@@ -84,9 +91,11 @@ export default function Navbar() {
           <Link to="/contact" onClick={toggleMobileMenu} className="font-semibold text-gray-700">Contact</Link>
           <div className="pt-2 border-t">
             {user ? (
-              <button onClick={() => { logout(); toggleMobileMenu(); }} className="w-full text-left text-red-600 font-bold italic">Logout ({user.name})</button>
+              <button onClick={() => { logout(); toggleMobileMenu(); }} className="w-full text-left text-red-600 font-bold italic">
+                Logout ({displayName})
+              </button>
             ) : (
-              <Link to="/login" onClick={toggleMobileMenu} className="block w-full text-center bg-pmorange text-white py-2 rounded-lg">Login</Link>
+              <Link to="/login" onClick={toggleMobileMenu} className="block w-full text-center bg-pmorange text-white py-2 rounded-lg font-bold">Login</Link>
             )}
           </div>
         </div>
