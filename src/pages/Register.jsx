@@ -105,7 +105,7 @@ export default function Register() {
             <input type="email" placeholder="Email Address" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-pmorange" required
               onChange={e => setForm({...form, email: e.target.value})} />
 
-            <input type="tel" placeholder="Phone (07...)" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-pmorange" required
+            <input type="tel" placeholder="Phone (+254...)" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-pmorange" required
               onChange={e => setForm({...form, phone: e.target.value})} />
 
             <input type="password" placeholder="Create Password" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-pmorange" required
