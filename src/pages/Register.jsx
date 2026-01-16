@@ -13,7 +13,7 @@ export default function Register() {
     email: "",
     phone: "",
     password: "",
-    otp: ""
+    otp: "" // This is the state we are updating with the onchange
   });
 
   const navigate = useNavigate();
@@ -45,9 +45,6 @@ export default function Register() {
             phone: formattedPhone 
         });
         if (otpError) throw otpError;
-      } else {
-          // If email is selected, Supabase sends the code automatically 
-          // based on your Dashboard "Confirm Email" settings.
       }
 
       setStep(2);
@@ -67,13 +64,13 @@ export default function Register() {
         const formattedPhone = form.phone.startsWith("0") ? `+254${form.phone.substring(1)}` : form.phone;
         result = await supabase.auth.verifyOtp({ 
             phone: formattedPhone, 
-            token: form.otp, 
+            token: form.otp, // Uses the state from the onchange
             type: 'sms' 
         });
       } else {
         result = await supabase.auth.verifyOtp({ 
             email: form.email, 
-            token: form.otp, 
+            token: form.otp, // Uses the state from the onchange
             type: 'signup' 
         });
       }
@@ -100,15 +97,19 @@ export default function Register() {
         {step === 1 ? (
           <form onSubmit={handleRegister} className="space-y-4">
             <input type="text" placeholder="Full Name" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-pmorange" required
+              value={form.name}
               onChange={e => setForm({...form, name: e.target.value})} />
             
             <input type="email" placeholder="Email Address" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-pmorange" required
+              value={form.email}
               onChange={e => setForm({...form, email: e.target.value})} />
 
-            <input type="tel" placeholder="Phone (+254...)" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-pmorange" required
+            <input type="tel" placeholder="Phone (07...)" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-pmorange" required
+              value={form.phone}
               onChange={e => setForm({...form, phone: e.target.value})} />
 
             <input type="password" placeholder="Create Password" className="w-full p-4 bg-gray-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-pmorange" required
+              value={form.password}
               onChange={e => setForm({...form, password: e.target.value})} />
 
             <div className="p-4 bg-gray-100 rounded-2xl">
@@ -129,10 +130,20 @@ export default function Register() {
               <p className="text-gray-500 text-sm">Verify the code sent to your <b>{method}</b></p>
               <p className="font-bold text-gray-800">{method === 'email' ? form.email : form.phone}</p>
             </div>
-            <input type="text" placeholder="● ● ● ● ● ●" className="w-full p-5 border-2 border-gray-100 rounded-2xl text-center text-3xl font-black tracking-widest focus:border-pmorange outline-none"
-              onChange={e => setForm({...form, otp: e.target.value})} required maxLength={6} />
+            
+            {/* ✅ FIXED OTP INPUT WITH ONCHANGE */}
+            <input 
+              type="text" 
+              placeholder="● ● ● ● ● ●" 
+              className="w-full p-5 border-2 border-gray-100 rounded-2xl text-center text-3xl font-black tracking-widest focus:border-pmorange outline-none"
+              value={form.otp}
+              onChange={e => setForm({...form, otp: e.target.value})} 
+              required 
+              maxLength={6} 
+            />
+            
             <button className="w-full bg-black text-white py-4 rounded-2xl font-black">CONFIRM OTP</button>
-            <button type="button" onClick={() => setStep(1)} className="w-full text-gray-400 text-xs font-bold uppercase tracking-widest">Back to edit info</button>
+            <button type="button" onClick={() => { setStep(1); setForm({...form, otp: ""}); }} className="w-full text-gray-400 text-xs font-bold uppercase tracking-widest">Back to edit info</button>
           </form>
         )}
       </div>
