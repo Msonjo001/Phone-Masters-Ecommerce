@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useCart } from "../context/CartContext.jsx";
-import { useAuth } from "../context/AuthContext.jsx"; // Added for session check
+import { useAuth } from "../context/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient.js";
 
@@ -22,7 +22,7 @@ const cleanPrice = (priceString) => {
 
 export default function Checkout() {
   const { cart, clearCart } = useCart();
-  const { user } = useAuth(); // Accessing user for autofill
+  const { user, loading } = useAuth(); // ✅ Added 'loading' here
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -36,20 +36,22 @@ export default function Checkout() {
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false); 
 
-  // ✅ AUTOFILL & REDIRECTION LOGIC
+  // ✅ CORRECTED AUTOFILL & REDIRECTION LOGIC
   useEffect(() => {
-    // If auth loading is done and there's no user, redirect to login
-    if (!user) {
-      navigate("/login");
-    } else {
-      // Autofill fields from Supabase metadata
-      setForm(prev => ({
-        ...prev,
-        name: user.user_metadata?.full_name || "",
-        phone: user.user_metadata?.phone_number || user.phone || ""
-      }));
+    // Only act once the AuthContext has finished loading the session
+    if (!loading) {
+      if (!user) {
+        navigate("/login");
+      } else {
+        // Autofill fields from Supabase metadata
+        setForm(prev => ({
+          ...prev,
+          name: user.user_metadata?.full_name || "",
+          phone: user.user_metadata?.phone_number || user.phone || ""
+        }));
+      }
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]); // ✅ Added loading to dependency array
 
   const deliveryFee = form.address === "Nairobi" ? 0 : 350;
 
@@ -75,7 +77,7 @@ export default function Checkout() {
         product_id: item.id,
         status: "Initiated",
         amount_paid: Number(cleanPrice(item.price)) || 0,
-        user_id: user?.id // Link order to user ID
+        user_id: user?.id 
       }));
 
       const { error: insertError } = await supabase
@@ -122,7 +124,8 @@ export default function Checkout() {
     }
   };
 
-  // Prevent "flash" of content if user isn't loaded yet
+  // ✅ Prevent "flash" of content or early redirect while loading
+  if (loading) return null;
   if (!user) return null;
 
   if (success) {
